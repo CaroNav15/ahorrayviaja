@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora Ahorro Viaje</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f4f4f4; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        h1 { text-align: center; color: #333; }
+        .tabs { display: flex; margin-bottom: 20px; }
+        .tab-button { flex: 1; padding: 10px; background: #007bff; color: white; border: none; cursor: pointer; font-size: 16px; }
+        .tab-button.active, .tab-button:hover { background: #0056b3; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        form { display: grid; gap: 15px; }
+        label { font-weight: bold; }
+        input, select { padding: 8px; border: 1px solid #ddd; border-radius: 4px; width: 100%; box-sizing: border-box; }
+        input[type="number"], input[type="date"] { width: auto; }
+        select { width: auto; margin-left: 10px; }
+        button { background: #28a745; color: white; padding: 12px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; }
+        button:hover { background: #218838; }
+        .factible { color: #28a745; font-weight: bold; }
+        .no-factible { color: #dc3545; font-weight: bold; }
+        .sugerencia { background: #fff3cd; padding: 10px; border-radius: 4px; margin: 10px 0; }
+        .info { background: #d1ecf1; padding: 10px; border-radius: 4px; margin: 10px 0; }
+        .proyeccion { background: #e2f3e2; padding: 10px; border-radius: 4px; margin: 10px 0; }
+        @media (max-width: 600px) { .tabs { flex-direction: column; } input, select { width: 100%; margin: 5px 0; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Calculadora de Ahorro para Viaje</h1>
+        
+        <!-- Pestañas -->
+        <div class="tabs">
+            <button class="tab-button active" onclick="switchTab('datos')">Datos</button>
+            <button class="tab-button" onclick="switchTab('analisis')">Análisis</button>
+            <button class="tab-button" onclick="switchTab('inversion')">Inversión</button>
+        </div>
+        
+        <!-- Contenido de pestañas -->
+        <div id="datos" class="tab-content active">
+            <form id="datosForm">
+                <label for="tc">TC ARS/USD:</label>
+                <input type="number" id="tc" value="950" step="0.01" min="0">
+                
+                <label for="ingresos">Ingresos mensuales:</label>
+                <input type="text" id="ingresos" placeholder="Ej: 200000">
+                <select id="monedaIngresos">
+                    <option value="USD">USD</option>
+                    <option value="EUR">EUR</option>
+                    <option value="GBP">GBP</option>
+                    <option value="ARS">ARS</option>
+                    <option value="BRL">BRL</option>
+                    <option value="MXN">MXN</option>
+                    <option value="CLP">CLP</option>
+                    <option value="COP">COP</option>
+                </select>
+                
+                <label for="fechaViaje">Fecha del viaje:</label>
+                <input type="date" id="fechaViaje">
+                
+                <label for="totalViaje">Total del viaje:</label>
+                <input type="text" id="totalViaje" placeholder="Ej: 5000">
+                <select id="monedaTotal">
+                    <option value="USD">USD</option>
+                    <option value="EUR">EUR</option>
+                    <option value="GBP">GBP</option>
+                    <option value="ARS">ARS</option>
+                    <option value="BRL">BRL</option>
+                    <option value="MXN">MXN</option>
+                    <option value="CLP">CLP</option>
+                    <option value="COP">COP</option>
+                </select>
+                
+                <label for="ahorroMensual">Ahorro mensual actual:</label>
+                <input type="text" id="ahorroMensual" placeholder="Ej: 40000">
+                <select id="monedaAhorroMensual">
+                    <option value="USD">USD</option>
+                    <option value="EUR">EUR</option>
+                    <option value="GBP">GBP</option>
+                    <option value="ARS">ARS</option>
+                    <option value="BRL">BRL</option>
+                    <option value="MXN">MXN</option>
+                    <option value="CLP">CLP</option>
+                    <option value="COP">COP</option>
+                </select>
+                
+                <label for="ahorroInicial">Ahorro inicial:</label>
+                <input type="text" id="ahorroInicial" placeholder="Ej: 0" value="0">
+                <select id="monedaAhorroInicial">
+                    <option value="USD">USD</option>
+                    <option value="EUR">EUR</option>
+                    <option value="GBP">GBP</option>
+                    <option value="ARS">ARS</option>
+                    <option value="BRL">BRL</option>
+                    <option value="MXN">MXN</option>
+                    <option value="CLP">CLP</option>
+                    <option value="COP">COP</option>
+                </select>
+                
+                <button type="button" id="calcularBtn" onclick="calcularAhorro()">Calcular</button>
+            </form>
+        </div>
+        
+        <div id="analisis" class="tab-content">
+            <div id="resultadosAnalisis"></div>
+        </div>
+        
+        <div id="inversion" class="tab-content">
+            <div id="resultadosInversion"></div>
+        </div>
+    </div>
+
+    <script>
+        var rates = {USD: 1, EUR: 0.92, GBP: 0.79, ARS: 950, BRL: 5.5, MXN: 17.5, CLP: 950, COP: 4100};
+        
+        function formatNumber(num) {
+            if (isNaN(num) || num === null || num === undefined) return '0';
+            return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+        }
+        
+        function parseNumber(str) {
+            if (!str) return 0;
+            return parseFloat(str.replace(/\./g, '')) || 0;
+        }
+        
+        function formatInputRealTime(input) {
+            var value = input.value.replace(/\./g, '');
+            if (!isNaN(value) && value !== '') {
+                input.value = formatNumber(parseFloat(value));
+            }
+        }
+        
+        function addInputListeners() {
+            var inputs = ['ingresos', 'totalViaje', 'ahorroMensual', 'ahorroInicial'];
+            for (var i = 0; i < inputs.length; i++) {
+                var elem = document.getElementById(inputs[i]);
+                if (elem) {
+                    elem.oninput = function() { formatInputRealTime(this); };
+                    elem.onblur = function() {
+                        var val = parseNumber(this.value);
+                        this.value = formatNumber(val);
+                    };
+                }
+            }
+            var tcInput = document.getElementById('tc');
+            if (tcInput) {
+                tcInput.onblur = function() {
+                    var tc = parseFloat(this.value) || 950;
+                    rates.ARS = tc;
+                };
+            }
+        }
+        
+        function switchTab(tabName) {
+            var contents = document.getElementsByClassName('tab-content');
+            var buttons = document.getElementsByClassName('tab-button');
+            for (var i = 0; i < contents.length; i++) {
+                contents[i].classList.remove('active');
+            }
+            for (var j = 0; j < buttons.length; j++) {
+                buttons[j].classList.remove('active');
+            }
+            document.getElementById(tabName).classList.add('active');
+            var activeButton = document.querySelector('[onclick="switchTab(\'' + tabName + '\')"]');
+            if (activeButton) activeButton.classList.add('active');
+        }
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            addInputListeners();
+        });
+        
+        function calcularValorFuturo(principal, tasa, periodos, pagoMensual) {
+            if (tasa === 0) {
+                return principal + pagoMensual * periodos;
+            }
+            var r = tasa / 12;
+            var n = periodos;
+            var fvPrincipal = principal * Math.pow(1 + r, n);
+            var fvAnnuity = pagoMensual * (Math.pow(1 + r, n) - 1) / r;
+            return fvPrincipal + fvAnnuity;
+        }
+        
+        function calcularTasaInversion(inicialUSD, mensualUSD, totalUSD, meses, precision) {
+            precision = precision || 0.0001;
+            var low = 0;
+            var high = 1;
+            var mid;
+            while (high - low > precision) {
+                mid = (low + high) / 2;
+                var fv = calcularValorFuturo(inicialUSD, mid, meses, mensualUSD);
+                if (fv < totalUSD) {
+                    low = mid;
+                } else {
+                    high = mid;
+                }
+            }
+            return (low + high) / 2 * 100;
+        }
+        
+        function actualizarInversion(factible, requeridoMensualUSD, actualMensualUSD, inicialUSD, totalUSD, meses, tc) {
+            var div = document.getElementById('resultadosInversion');
+            div.innerHTML = '';
+            if (!factible) {
+                var tasaReq = calcularTasaInversion(inicialUSD, actualMensualUSD, totalUSD, meses);
+                var fvProy = calcularValorFuturo(inicialUSD, tasaReq / 100, meses, actualMensualUSD);
+                var divProy = document.createElement('div');
+                divProy.className = 'proyeccion';
+                divProy.innerHTML = '<h3>Proyección con Tasa Requerida (' + tasaReq.toFixed(2) + '% anual)</h3>' +
+                                    '<p>Con tu ahorro actual, necesitarías una tasa de inversión del ' + tasaReq.toFixed(2) + '% anual para llegar al objetivo.</p>' +
+                                    '<p>Valor futuro estimado: $' + formatNumber(fvProy.toFixed(2)) + ' USD</p>';
+                div.appendChild(divProy);
+                return;
+            }
+            var tasaTesoro = 0.045;
+            var fvTesoro = calcularValorFuturo(inicialUSD, tasaTesoro, meses, requeridoMensualUSD);
+            var divInfo = document.createElement('div');
+            divInfo.className = 'info';
+            divInfo.innerHTML = '<h3>Información de Inversión</h3>' +
+                                '<p>¡Factible! Puedes invertir en opciones conservadoras como Bonos del Tesoro al 4.5% anual (compounding mensual).</p>' +
+                                '<p>Ahorro inicial: $' + formatNumber(inicialUSD.toFixed(2)) + ' USD</p>' +
+                                '<p>Ahorro mensual requerido: $' + formatNumber(requeridoMensualUSD.toFixed(2)) + ' USD</p>' +
+                                '<p>Valor futuro con 4.5%: $' + formatNumber(fvTesoro.toFixed(2)) + ' USD (supera tu objetivo de $' + formatNumber(totalUSD.toFixed(2)) + ' USD)</p>';
+            div.appendChild(divInfo);
+        }
+        
+        function convertirAUD(amount, moneda, tc) {
+            var rate = rates[moneda];
+            if (moneda === 'ARS') rate = tc;
+            return amount / rate;
+        }
+        
+        function mesesRestantes(fechaStr) {
+            var hoy = new Date();
+            var fechaViaje = new Date(fechaStr);
+            var diffMs = fechaViaje - hoy;
+            var meses = Math.ceil(diffMs / (1000 * 60 * 60 * 24 * 30.44));
+            return Math.max(meses, 1);
+        }
+        
+        function actualizarAnalisis(factible, requeridoMensualUSD, actualMensualUSD, inicialUSD, totalUSD, meses, porcentajeIngresos) {
+            var div = document.getElementById('resultadosAnalisis');
+            div.innerHTML = '';
+            var statusClass = factible ? 'factible' : 'no-factible';
+            var statusText = factible ? '¡Factible!' : 'No factible';
+            var divStatus = document.createElement('div');
+            divStatus.className = statusClass;
+            divStatus.innerHTML = '<h3>' + statusText + '</h3>' +
+                                  '<p>Meses restantes: ' + meses + '</p>' +
+                                  '<p>Ahorro requerido mensual: $' + formatNumber(requeridoMensualUSD.toFixed(2)) + ' USD</p>' +
+                                  '<p>Ahorro actual mensual: $' + formatNumber(actualMensualUSD.toFixed(2)) + ' USD</p>' +
+                                  '<p>Total objetivo: $' + formatNumber(totalUSD.toFixed(2)) + ' USD</p>' +
+                                  '<p>Ahorro inicial: $' + formatNumber(inicialUSD.toFixed(2)) + ' USD</p>' +
+                                  '<p>Porcentaje de ingresos: ' + porcentajeIngresos.toFixed(1) + '%</p>';
+            div.appendChild(divStatus);
+            
+            var sugerenciaDiv = document.createElement('div');
+            sugerenciaDiv.className = 'sugerencia';
+            if (factible) {
+                sugerenciaDiv.innerHTML = '<p>¡Excelente! Con tu plan actual, llegarás al objetivo. Considera invertir para maximizar rendimientos.</p>';
+            } else {
+                var diferencia = requeridoMensualUSD - actualMensualUSD;
+                sugerenciaDiv.innerHTML = '<p>Sugerencia: Necesitas aumentar tu ahorro mensual en $' + formatNumber(diferencia.toFixed(2)) + ' USD (o equivalente en tu moneda). Reduce gastos o busca ingresos extra.</p>';
+            }
+            div.appendChild(sugerenciaDiv);
+        }
+        
+        function calcularAhorro() {
+            var fechaViaje = document.getElementById('fechaViaje').value;
+            if (!fechaViaje) {
+                alert('Por favor, ingresa la fecha del viaje.');
+                return;
+            }
+            var tc = parseFloat(document.getElementById('tc').value) || 950;
+            rates.ARS = tc;
+            
+            var ingresos = parseNumber(document.getElementById('ingresos').value);
+            if (ingresos <= 0) {
+                alert('Por favor, ingresa ingresos mensuales válidos.');
+                return;
+            }
+            var monedaIngresos = document.getElementById('monedaIngresos').value;
+            var ingresosUSD = convertirAUD(ingresos, monedaIngresos, tc);
+            
+            var total = parseNumber(document.getElementById('totalViaje').value);
+            if (total <= 0) {
+                alert('Por favor, ingresa total del viaje válido.');
+                return;
+            }
+            var monedaTotal = document.getElementById('monedaTotal').value;
+            var totalUSD = convertirAUD(total, monedaTotal, tc);
+            
+            var ahorroMensual = parseNumber(document.getElementById('ahorroMensual').value);
+            var monedaAhorroMensual = document.getElementById('monedaAhorroMensual').value;
+            var actualMensualUSD = convertirAUD(ahorroMensual, monedaAhorroMensual, tc);
+            
+            var ahorroInicial = parseNumber(document.getElementById('ahorroInicial').value);
+            var monedaAhorroInicial = document.getElementById('monedaAhorroInicial').value;
+            var inicialUSD = convertirAUD(ahorroInicial, monedaAhorroInicial, tc);
+            
+            var meses = mesesRestantes(fechaViaje);
+            var requeridoMensualUSD = (totalUSD - inicialUSD) / meses;
+            var factible = actualMensualUSD >= requeridoMensualUSD;
+            var porcentajeIngresos = (requeridoMensualUSD / ingresosUSD) * 100;
+            
+            actualizarAnalisis(factible, requeridoMensualUSD, actualMensualUSD, inicialUSD, totalUSD, meses, porcentajeIngresos);
+            actualizarInversion(factible, requeridoMensualUSD, actualMensualUSD, inicialUSD, totalUSD, meses, tc);
+            switchTab('analisis');
+        }
+    </script>
+</body>
+</html>
